@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Wallet</title>
+     <link rel="shortcut icon" href="https://ul.engagetesla.com/ul/q_auto/WgYxKMar/626844/Tesla%20Favicon.png" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        .wallet-header {
+            text-align: center;
+            padding: 20px;
+            background-color: #1e1e1e;
+            border-bottom: 1px solid #444;
+        }
+        .wallet-header h1 {
+            font-size: 2rem;
+        }
+        .balance-card {
+            background-color: #1e1e1e;
+            border: none;
+            padding: 20px;
+            border-radius: 10px;
+            color: #fff;
+        }
+        .transaction-table {
+            background-color: #1e1e1e;
+            color: #fff;
+        }
+        .transaction-table th, .transaction-table td {
+            border: 1px solid #444;
+        }
+        .transaction-table th {
+            background-color: #333;
+        }
+        .btn-primary {
+            background-color: #cc0000;
+            border-color: #cc0000;
+        }
+        .btn-primary:hover {
+            background-color: #e60000;
+            border-color: #e60000;
+        }
+        .btn-secondary {
+            background-color: #444;
+            border-color: #444;
+        }
+        .btn-secondary:hover {
+            background-color: #666;
+        }
+    </style>
+</head>
+<body>
+    <header class="wallet-header">
+        <h1>Your Wallet</h1>
+        <p>Manage your funds and view your transaction history</p>
+    </header>
+    <main class="container mt-4">
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <div class="card balance-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Wallet Balance</h5>
+                        <p class="card-text" id="wallet-balance">$0.00</p>
+                        <button class="btn btn-primary mt-3" onclick="addFunds()">Add Funds</button>
+                        <button class="btn btn-secondary mt-3" onclick="deductFunds()">Deduct Funds</button>
+                        <button class="btn btn-primary mt-3" onclick="withdrawFunds()">Withdraw to Bitcoin</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-8 offset-md-2">
+                <h4>Transaction History</h4>
+                <table class="table transaction-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-history"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let walletBalance = 500.00; // Starting wallet balance
+        let transactions = [];
+
+        // Format date helper function
+        const formatDate = () => {
+            const now = new Date();
+            return now.toLocaleString();
+        };
+
+        // Update wallet display
+        const updateWalletDisplay = () => {
+            document.getElementById('wallet-balance').textContent = `$${walletBalance.toFixed(2)}`;
+            const transactionHTML = transactions.map(tx => `
+                <tr>
+                    <td>${tx.id}</td>
+                    <td>${tx.type}</td>
+                    <td>${tx.amount < 0 ? '-' : ''}$${Math.abs(tx.amount).toFixed(2)}</td>
+                    <td>${tx.date}</td>
+                </tr>
+            `).join('');
+            document.getElementById('transaction-history').innerHTML = transactionHTML;
+        };
+
+        // Add funds
+        const addFunds = () => {
+            Swal.fire({
+                title: 'Add Funds',
+                input: 'number',
+                inputLabel: 'Enter the amount to add:',
+                inputPlaceholder: 'e.g., 50.00',
+                inputValidator: (value) => {
+                    if (!value || value <= 0) return 'Please enter a valid amount!';
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const amount = parseFloat(result.value);
+                    walletBalance += amount;
+                    transactions.push({ id: transactions.length + 1, type: 'Credit', amount, date: formatDate() });
+                    updateWalletDisplay();
+                    Swal.fire('Success', `Successfully added $${amount.toFixed(2)} to your wallet!`, 'success');
+                }
+            });
+        };
+
+        // Deduct funds
+        const deductFunds = () => {
+            Swal.fire({
+                title: 'Deduct Funds',
+                input: 'number',
+                inputLabel: 'Enter the amount to deduct:',
+                inputPlaceholder: 'e.g., 20.00',
+                inputValidator: (value) => {
+                    if (!value || value <= 0) return 'Please enter a valid amount!';
+                    if (value > walletBalance) return 'Insufficient funds!';
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const amount = parseFloat(result.value);
+                    walletBalance -= amount;
+                    transactions.push({ id: transactions.length + 1, type: 'Debit', amount: -amount, date: formatDate() });
+                    updateWalletDisplay();
+                    Swal.fire('Success', `Successfully deducted $${amount.toFixed(2)} from your wallet!`, 'success');
+                }
+            });
+        };
+
+        // Withdraw to Bitcoin
+        const withdrawFunds = () => {
+            Swal.fire({
+                title: 'Withdraw Funds',
+                html: `
+                    <label for="btc-address" class="form-label">Bitcoin Wallet Address:</label>
+                    <input type="text" id="btc-address" class="form-control mb-3" placeholder="Enter your Bitcoin wallet address">
+                    <label for="withdraw-amount" class="form-label">Amount to Withdraw:</label>
+                    <input type="number" id="withdraw-amount" class="form-control" placeholder="e.g., 100.00">
+                `,
+                confirmButtonText: 'Confirm',
+                preConfirm: () => {
+                    const btcAddress = document.getElementById('btc-address').value;
+                    const amount = parseFloat(document.getElementById('withdraw-amount').value);
+
+                    if (!btcAddress) {
+                        Swal.showValidationMessage('Please enter your Bitcoin wallet address!');
+                    }
+                    if (!amount || amount <= 0) {
+                        Swal.showValidationMessage('Please enter a valid amount!');
+                    }
+                    if (amount > walletBalance) {
+                        Swal.showValidationMessage('Insufficient funds!');
+                    }
+                    return { btcAddress, amount };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const { btcAddress, amount } = result.value;
+                    walletBalance -= amount;
+                    transactions.push({ id: transactions.length + 1, type: 'Withdrawal', amount: -amount, date: formatDate() });
+                    updateWalletDisplay();
+                    Swal.fire('Success', `Successfully withdrawn $${amount.toFixed(2)} to Bitcoin wallet: ${btcAddress}`, 'success.');
+                }
+            });
+        };
+
+        // Initialize wallet display
+        updateWalletDisplay();
+    </script>
+</body>
+</html>
